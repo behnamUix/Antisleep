@@ -3,6 +3,7 @@ package com.behnamuix.antisleep
 import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.PointF
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,6 +40,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.behnamuix.antisleep.Utils.MySoundPlayer
 
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.FaceContour
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import java.util.concurrent.Executors
@@ -57,7 +59,7 @@ fun FaceDetectorComp() {
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
             .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-            .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
+            .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
             .build()
     )
 
@@ -121,10 +123,11 @@ fun FaceDetectorComp() {
                                         Toast.makeText(context, "بیدار شو!!", Toast.LENGTH_LONG)
                                             .show()
                                         eyeAlertShown = true
-                                    } else if (rightEye >= 10 && leftEye >= 10) {
-                                        // وقتی دوباره چشم‌ها باز شد Flag ریست شود
-                                        eyeAlertShown = false
+
+                                    } else if (rightEye >= 10 && leftEye >= 10 && eyeAlertShown) {
+
                                         MySoundPlayer.stop()
+                                        eyeAlertShown = false
                                     }
                                     val smileText = String.format("%.2f", smile)
                                     val eyeTextL = String.format("%.2f", leftEye)
@@ -133,14 +136,32 @@ fun FaceDetectorComp() {
                                     val headYText = String.format("%.2f", headY)
                                     val headZText = String.format("%.2f", headZ)
 
+                                    //faceshape
+                                    val contour = face.getContour(FaceContour.FACE)?.points
+                                    val faceShapeText = if (!contour.isNullOrEmpty()) {
+                                        val minX = contour.minOf { it.x }
+                                        val maxX = contour.maxOf { it.x }
+                                        val minY = contour.minOf { it.y }
+                                        val maxY = contour.maxOf { it.y }
+
+                                        val width = maxX - minX
+                                        val height = maxY - minY
+
+                                        "🧠 فرم صورت: ${detectFaceShape(width, height)}"
+                                    } else {
+                                        "🧠 فرم صورت: نامشخص"
+                                    }
+
+
+
 
                                     resultText =
+                                        "${faceShapeText} \n"+
                                         "😄 درصد خندیدن: % $smileText\n" +
                                                 "👁️ چشم چپ: % $eyeTextL\n" +
                                                 "👁️ چشم راست: % $eyeTextR\n" +
                                                 "⬆️⬇️ سر بالا/پایین: $headXText°\n" +
-                                                "⬅️➡️ سر چپ/راست: $headYText°\n" +
-                                                "🔄 کج شدن سر: $headZText°"
+                                                "⬅️➡️ سر چپ/راست: $headYText°\n"
 
                                 } else {
                                     resultText = "چهره‌ای شناسایی نشده"
@@ -164,6 +185,20 @@ fun FaceDetectorComp() {
         }
     }
 }
+
+private fun detectFaceShape(width: Float, height: Float): String {
+
+    val ratio = height / width
+
+    return when {
+        ratio > 1.5f -> "مستطیلی"
+        ratio in 1.35f..1.5f -> "بیضی"
+        ratio in 1.15f..1.35f -> "گرد"
+        ratio < 1.15f -> "مربعی"
+        else -> "نامشخص"
+    }
+}
+
 
 @Composable
 fun CameraPreview(

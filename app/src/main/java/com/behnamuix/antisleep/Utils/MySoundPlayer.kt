@@ -9,6 +9,7 @@ object MySoundPlayer {
 
     private var soundPool: SoundPool? = null
     private var soundId: Int = 0
+    private var streamId: Int = 0   // ⭐ خیلی مهم
     private var loaded = false
 
     fun init(context: Context) {
@@ -20,7 +21,7 @@ object MySoundPlayer {
             .build()
 
         soundPool = SoundPool.Builder()
-            .setMaxStreams(2)
+            .setMaxStreams(1)
             .setAudioAttributes(audioAttributes)
             .build()
 
@@ -32,26 +33,29 @@ object MySoundPlayer {
     }
 
     fun play() {
-        if (loaded) {
-            soundPool?.play(
+        if (loaded && streamId == 0) {
+            streamId = soundPool!!.play(
                 soundId,
-                1f, 1f, // left / right volume
+                1f,
+                1f,
                 1,
-                -1,
+                -1, // loop
                 1f
             )
         }
     }
 
     fun stop() {
-        if (loaded) {
-            soundPool?.stop(soundId)
+        if (streamId != 0) {
+            soundPool?.stop(streamId)
+            streamId = 0
         }
     }
 
     fun release() {
         soundPool?.release()
         soundPool = null
+        streamId = 0
         loaded = false
     }
 }
