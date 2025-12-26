@@ -185,10 +185,6 @@ fun FaceDetectorComp() {
         }
     }
 }
-
-
-
-
 @Composable
 fun CameraPreview(
     modifier: Modifier = Modifier,
@@ -236,13 +232,6 @@ fun CameraPreview(
             previewView
         }
     )
-}
-
-fun drawableToBitmap(
-    context: Context, drawableResId: Int
-): Bitmap {
-    val drawable = ContextCompat.getDrawable(context, drawableResId)!!
-    return drawable.toBitmap()
 }
 
 
